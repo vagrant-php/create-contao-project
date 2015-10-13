@@ -1,4 +1,4 @@
-# create-symfony-project
+# create-contao-project
 
 ## installation
 
@@ -6,7 +6,7 @@
 
 ```{.sh}
 cd ~
-git clone https://github.com/vagrant-php/create-symfony-project.git
+git clone https://github.com/vagrant-php/create-contao-project.git
 ```
 
 ### register path
@@ -14,21 +14,21 @@ git clone https://github.com/vagrant-php/create-symfony-project.git
 add the following line to your `.bashrc` or `.bash_profile` depending on your system
 
 ```{.sh}
-export PATH=~/create-symfony-project/bin:$PATH
+export PATH=~/create-contao-project/bin:$PATH
 ```
 
 ## update
 
 ### pull
 ```{.sh}
-cd ~/create-symfony-project
+cd ~/create-contao-project
 git pull
 ```
 
 ## usage
 
 ```{.sh}
-create-symfony-project --help
+create-contao-project --help
 ```
 
 ## credentials
