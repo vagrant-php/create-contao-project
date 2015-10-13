@@ -1,0 +1,130 @@
+#!/bin/bash
+
+## http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in ##
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+##################################################################################################
+
+# defaults
+contaoVersion=3.5.4
+
+# get all parameters
+for i in "$@"
+do
+    case $i in
+        -pn=*|--projectname=*)
+            projectName="${i#*=}"
+            shift
+        ;;
+        -cv=*|--contaoversion=*)
+            contaoVersion="${i#*=}"
+            shift
+        ;;
+        -st=*|--sharetype=*)
+            shareType="${i#*=}"
+            shift
+        ;;
+        -h|--help)
+            echo "usage: create-contao-project --projectname=myproject --contaoversion=$contaoVersion --sharetype=nfs"
+            echo "usage: create-contao-project -pn=myproject -cv=$contaoVersion --st=nfs"
+            exit 0
+        ;;
+    esac
+done
+
+# get contao version parts
+contaoVersionParts=(${contaoVersion//./ })
+contaoMinorVersion=${contaoVersionParts[0]}.${contaoVersionParts[1]}
+
+# check for projectname
+if [ -z "$projectName" ]; then
+    echo "please enter a project name: --projectname=myproject"
+    exit 1
+fi
+
+# check for projectname signs
+if [[ $projectName = *[^[:alnum:]]* ]]; then
+    echo "please enter a project name which is alphanumeric"
+    exit 1
+fi
+
+# check if the project directory allready exists
+if [ -d "$projectName" ]; then
+    echo "please enter a another project name, directory allready exists"
+    exit 1
+fi
+
+# download only if not allready downloaded
+if [ ! -f $DIR/../downloads/contao-$contaoVersion.zip ]; then
+    # zip url
+    url="https://github.com/contao/core/releases/download/3.5.4/contao-$contaoVersion.zip"
+
+    # check if the url is callable
+    curl -s --head $url | head -n 1 | grep "HTTP/1.[01] [23].." > /dev/null
+    if [ "$?" ==  1 ]; then
+        echo "can't resolve url $url"
+        exit 1
+    fi
+
+    # download contao
+    curl -L $url -o $DIR/../downloads/contao-$contaoVersion.zip
+fi
+
+# extract contao
+unzip $DIR/../downloads/contao-$contaoVersion.zip
+
+# move extracted contao to a dir with project name
+mv contao-$contaoVersion $projectName
+
+cd $projectName
+
+git init
+
+# add vagrant setup as submodule
+git submodule add -b v1-ubuntu https://github.com/dominikzogg/vagrant-php.git
+
+# prepare a default vagrant.yml
+printf "hostname: $projectName.dev\napplication: contao\n" > vagrant.yml
+
+# add sharetype if defined
+if [[ $shareType ]]; then
+    printf "sharetype: $shareType\n" >> vagrant.yml
+fi
+
+# copy localconfig.php if exists for this version
+if [ -f "$DIR/../files/$contaoVersion/localconfig.php" ]; then
+    cp -f $DIR/../files/$contaoVersion/localconfig.php system/config/localconfig.php
+
+# copy localconfig.php if exists for this minor version
+elif [ -f "$DIR/../files/$contaoMinorVersion/localconfig.php" ]; then
+    cp -f $DIR/../files/$contaoMinorVersion/localconfig.php system/config/localconfig.php
+fi
+
+# copy contao.sql if exists for this version
+if [ -f "$DIR/../files/$contaoVersion/contao.sql" ]; then
+    cp -f $DIR/../files/$contaoVersion/contao.sql $projectName.sql
+
+# copy contao.sql if exists for this minor version
+elif [ -f "$DIR/../files/$contaoMinorVersion/contao.sql" ]; then
+    cp -f $DIR/../files/$contaoMinorVersion/contao.sql $projectName.sql
+fi
+
+cd vagrant-php
+
+# setup vagrant
+vagrant up
+
+# create database
+vagrant ssh -c "echo 'CREATE DATABASE $projectName;' | mysql"
+
+# install sql dump if exists for this minor version
+if [ -f "../$projectName.sql" ]; then
+    vagrant ssh -c "cd /vagrant && mysql $projectName < $projectName.sql"
+fi
