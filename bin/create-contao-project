@@ -154,9 +154,6 @@ vagrant up
 # create database
 vagrant ssh -c "echo 'CREATE DATABASE $name;' | mysql"
 
-# setup contao
-vagrant ssh -c "cd /vagrant && composer.phar install"
-
 # install sql dump if exists
 if [ -f "../contao.sql" ]; then
     vagrant ssh -c "cd /vagrant && mysql $projectName < contao.sql"
