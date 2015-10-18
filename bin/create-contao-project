@@ -13,58 +13,74 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 ##################################################################################################
 
 # defaults
-contaoVersion=3.5.4
+version=3.5.4
+sharetyp=nfs
+distribution=ubuntu
+distributionVersion=14.04
+application=contao3
 
 # get all parameters
 for i in "$@"
 do
     case $i in
-        -pn=*|--projectname=*)
-            projectName="${i#*=}"
+        --name=*)
+            name="${i#*=}"
             shift
         ;;
-        -cv=*|--contaoversion=*)
-            contaoVersion="${i#*=}"
+        --version=*)
+            version="${i#*=}"
             shift
         ;;
-        -st=*|--sharetype=*)
-            shareType="${i#*=}"
+        --sharetype=*)
+            sharetyp="${i#*=}"
+            shift
+        ;;
+        --distribution=*)
+            distribution="${i#*=}"
+            shift
+        ;;
+        --distributionVersion=*)
+            distributionVersion="${i#*=}"
             shift
         ;;
         -h|--help)
-            echo "usage: create-contao-project --projectname=myproject --contaoversion=$contaoVersion --sharetype=nfs"
-            echo "usage: create-contao-project -pn=myproject -cv=$contaoVersion --st=nfs"
+            echo "usage: create-contao-project --name=myproject"
+            echo "usage: create-contao-project --name=myproject --version=$version --sharetype=$sharetyp --distribution=$distribution --distributionVersion=$distributionVersion"
             exit 0
         ;;
     esac
 done
 
-# get contao version parts
-contaoVersionParts=(${contaoVersion//./ })
-contaoMinorVersion=${contaoVersionParts[0]}.${contaoVersionParts[1]}
+# get version parts
+versionParts=(${version//./ })
+majorVersion=${versionParts[0]}
+minorVersion=${versionParts[0]}.${versionParts[1]}
 
-# check for projectname
-if [ -z "$projectName" ]; then
-    echo "please enter a project name: --projectname=myproject"
+# check for name
+if [ -z "$name" ]; then
+    echo "please enter a project name: --name=myproject"
     exit 1
 fi
 
-# check for projectname signs
-if [[ $projectName = *[^[:alnum:]]* ]]; then
+# check for name signs
+if [[ $name = *[^[:alnum:]]* ]]; then
     echo "please enter a project name which is alphanumeric"
     exit 1
 fi
 
 # check if the project directory allready exists
-if [ -d "$projectName" ]; then
+if [ -d "$name" ]; then
     echo "please enter a another project name, directory allready exists"
     exit 1
 fi
 
+# get other variables
+url=https://github.com/contao/core/releases/download/$version/contao-$version.zip
+filename=contao-$version.zip
+foldername=contao-$version
+
 # download only if not allready downloaded
-if [ ! -f $DIR/../downloads/contao-$contaoVersion.zip ]; then
-    # zip url
-    url="https://github.com/contao/core/releases/download/3.5.4/contao-$contaoVersion.zip"
+if [ ! -f $DIR/../downloads/$filename ]; then
 
     # check if the url is callable
     curl -s --head $url | head -n 1 | grep "HTTP/1.[01] [23].." > /dev/null
@@ -73,48 +89,62 @@ if [ ! -f $DIR/../downloads/contao-$contaoVersion.zip ]; then
         exit 1
     fi
 
-    # download contao
-    curl -L $url -o $DIR/../downloads/contao-$contaoVersion.zip
+    # download zip
+    curl -L $url -o $DIR/../downloads/$filename
 fi
 
-# extract contao
-unzip $DIR/../downloads/contao-$contaoVersion.zip
+# extract zip
+unzip $DIR/../downloads/$filename
 
-# move extracted contao to a dir with project name
-mv contao-$contaoVersion $projectName
+# move extracted dir to a dir with project name
+mv $foldername $name
 
-cd $projectName
+cd $name
 
 git init
 
 # add vagrant setup as submodule
-git submodule add -b v1-ubuntu https://github.com/dominikzogg/vagrant-php.git
+git submodule add -b $distributionVersion https://github.com/vagrant-php/$distribution.git vagrant-php
 
 # prepare a default vagrant.yml
-printf "hostname: $projectName.dev\napplication: contao\n" > vagrant.yml
+printf "hostname: $name.dev\napplication: $application\n" > vagrant.yml
 
 # add sharetype if defined
-if [[ $shareType ]]; then
-    printf "sharetype: $shareType\n" >> vagrant.yml
+if [[ $sharetyp ]]; then
+    printf "sharetype: $sharetyp\n" >> vagrant.yml
 fi
 
-# copy localconfig.php if exists for this version
-if [ -f "$DIR/../files/$contaoVersion/localconfig.php" ]; then
-    cp -f $DIR/../files/$contaoVersion/localconfig.php system/config/localconfig.php
-
-# copy localconfig.php if exists for this minor version
-elif [ -f "$DIR/../files/$contaoMinorVersion/localconfig.php" ]; then
-    cp -f $DIR/../files/$contaoMinorVersion/localconfig.php system/config/localconfig.php
+# create a temp directory
+tempDir=$DIR/../tmp/project-$name
+if [ -d "$tempDir" ]; then
+    rm -rf $tempDir
 fi
 
-# copy contao.sql if exists for this version
-if [ -f "$DIR/../files/$contaoVersion/contao.sql" ]; then
-    cp -f $DIR/../files/$contaoVersion/contao.sql $projectName.sql
+mkdir $tempDir
 
-# copy contao.sql if exists for this minor version
-elif [ -f "$DIR/../files/$contaoMinorVersion/contao.sql" ]; then
-    cp -f $DIR/../files/$contaoMinorVersion/contao.sql $projectName.sql
+# copy files for this major version
+majorVersionFilePath=$DIR/../files/$majorVersion
+if [ -d "$majorVersionFilePath" ]; then
+    cp -rf $majorVersionFilePath/* $tempDir/
 fi
+
+# copy files for this minor version
+minorVersionFilePath=$DIR/../files/$minorVersion
+if [ -d "$minorVersionFilePath" ]; then
+    cp -rf $minorVersionFilePath/* $tempDir/
+fi
+
+# copy files for this version
+versionFilePath=$DIR/../files/$version
+if [ -d "$versionFilePath" ]; then
+    cp -rf $versionFilePath/* $tempDir/
+fi
+
+# replace variables within configs
+find $tempDir -type f -print0 | xargs -0 sed -i "s/%%%%name%%%%/$name/g"
+
+# copy the prepared config to the project
+cp -rf $tempDir/* .
 
 cd vagrant-php
 
@@ -122,9 +152,12 @@ cd vagrant-php
 vagrant up
 
 # create database
-vagrant ssh -c "echo 'CREATE DATABASE $projectName;' | mysql"
+vagrant ssh -c "echo 'CREATE DATABASE $name;' | mysql"
 
-# install sql dump if exists for this minor version
-if [ -f "../$projectName.sql" ]; then
-    vagrant ssh -c "cd /vagrant && mysql $projectName < $projectName.sql"
+# setup contao
+vagrant ssh -c "cd /vagrant && composer.phar install"
+
+# install sql dump if exists
+if [ -f "../contao.sql" ]; then
+    vagrant ssh -c "cd /vagrant && mysql $projectName < contao.sql"
 fi
