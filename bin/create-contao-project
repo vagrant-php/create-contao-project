@@ -156,5 +156,5 @@ vagrant ssh -c "echo 'CREATE DATABASE $name;' | mysql"
 
 # install sql dump if exists
 if [ -f "../contao.sql" ]; then
-    vagrant ssh -c "cd /vagrant && mysql $projectName < contao.sql"
+    vagrant ssh -c "cd /vagrant && mysql $name < contao.sql"
 fi
