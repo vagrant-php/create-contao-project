@@ -75,9 +75,9 @@ if [ -d "$name" ]; then
 fi
 
 # get other variables
-url=https://github.com/contao/core/releases/download/$version/contao-$version.zip
+url=https://github.com/contao/core/archive/$version.zip
 filename=contao-$version.zip
-foldername=contao-$version
+foldername=core-$version
 
 # download only if not allready downloaded
 if [ ! -f $DIR/../downloads/$filename ]; then
@@ -95,6 +95,12 @@ fi
 
 # extract zip
 unzip $DIR/../downloads/$filename
+
+# check if the folder within zip exists
+if [ ! -d $foldername ]; then
+    echo "there is no folder within zip file with name $foldername"
+    exit 1
+fi
 
 # move extracted dir to a dir with project name
 mv $foldername $name
