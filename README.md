@@ -1,4 +1,4 @@
-# create-contao-project
+# create-contao3-project
 
 ## installation
 
@@ -6,7 +6,7 @@
 
 ```{.sh}
 cd ~
-git clone https://github.com/vagrant-php/create-contao-project.git
+git clone https://github.com/vagrant-php/create-contao3-project.git
 ```
 
 ### register path
@@ -14,21 +14,21 @@ git clone https://github.com/vagrant-php/create-contao-project.git
 add the following line to your `.bashrc` or `.bash_profile` depending on your system
 
 ```{.sh}
-export PATH=~/create-contao-project/bin:$PATH
+export PATH=~/create-contao3-project/bin:$PATH
 ```
 
 ## update
 
 ### pull
 ```{.sh}
-cd ~/create-contao-project
+cd ~/create-contao3-project
 git pull
 ```
 
 ## usage
 
 ```{.sh}
-create-contao-project --help
+create-contao3-project --help
 ```
 
 ## credentials
