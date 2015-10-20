@@ -146,8 +146,8 @@ if [ -d "$versionFilePath" ]; then
     cp -rf $versionFilePath/* $tempDir/
 fi
 
-# replace variables within configs
-find $tempDir/system/config -name "*.php" -print0 | xargs -0 sed -i -e "s/%%%%name%%%%/$name/g"
+# replace variables within config
+sed -i "" -e "s/%%%%name%%%%/$name/g" $tempDir/system/config/localconfig.php
 
 # copy the prepared config to the project
 cp -rf $tempDir/* .
