@@ -164,3 +164,6 @@ vagrant ssh -c "echo 'CREATE DATABASE $name;' | mysql"
 if [ -f "../contao.sql" ]; then
     vagrant ssh -c "cd /vagrant && mysql $name < contao.sql"
 fi
+
+# setup symfony
+vagrant ssh -c "cd /vagrant && composer.phar install"
