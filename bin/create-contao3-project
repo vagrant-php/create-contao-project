@@ -160,7 +160,7 @@ cp -rf $tempDir/* .
 cd vagrant-php
 
 # setup vagrant
-vagrant up --vagrantProvider=$vagrantProvider
+vagrant up --provider=$vagrantProvider
 
 # create database
 vagrant ssh -c "echo 'CREATE DATABASE $name;' | mysql"
