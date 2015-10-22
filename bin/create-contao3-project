@@ -122,7 +122,7 @@ printf "hostname: $name.dev\napplication: $application\n" > vagrant.yml
 
 # add vagrantSharetype if defined
 if [[ $vagrantSharetype ]]; then
-    printf "vagrantSharetype: $vagrantSharetype\n" >> vagrant.yml
+    printf "sharetype: $vagrantSharetype\n" >> vagrant.yml
 fi
 
 # create a temp directory
