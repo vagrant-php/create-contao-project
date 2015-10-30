@@ -2,6 +2,10 @@
 
 ## installation
 
+### first use (prepare your computer)
+
+Read the installation guide of [vagrant-php][1].
+
 ### clone
 
 ```{.sh}
@@ -40,3 +44,5 @@ kZOPhGztaTZFGng8z76Z
 ### backend user
 
 admin // nMiuZ7890HtGfaszZGH
+
+[1]: https://github.com/vagrant-php/ubuntu#installation
