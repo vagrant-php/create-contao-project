@@ -1,4 +1,4 @@
-# create-contao3-project
+# vagrant-php/create-contao3-project
 
 ## installation
 
