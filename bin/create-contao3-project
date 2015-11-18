@@ -14,6 +14,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 # defaults
 application=contao3
+timezone=Europe/Zurich
 vagrantPhpBranch=14.04
 vagrantPhpRepository=https://github.com/vagrant-php/ubuntu.git
 vagrantProvider=virtualbox
@@ -26,6 +27,10 @@ do
     case $i in
         --name=*)
             name="${i#*=}"
+            shift
+        ;;
+        --timezone=*)
+            timezone="${i#*=}"
             shift
         ;;
         --vagrantPhpBranch=*)
@@ -80,6 +85,9 @@ if [ -d "$name" ]; then
 fi
 
 # get other variables
+nameLength=${#name}
+hostname=$name.dev
+hostnameLength=${#hostname}
 url=https://github.com/contao/core/archive/$version.zip
 filename=contao-$version.zip
 foldername=core-$version
@@ -137,7 +145,7 @@ if [ "$?" ==  1 ]; then
 fi
 
 # prepare a default vagrant.yml
-printf "hostname: $name.dev\napplication: $application\n" > vagrant.yml
+printf "hostname: $hostname\napplication: $application\n" > vagrant.yml
 
 # add vagrantSharetype if defined
 if [[ $vagrantSharetype ]]; then
@@ -172,6 +180,7 @@ fi
 
 # replace variables within config
 sed -i "" -e "s/%%%%name%%%%/$name/g" $tempDir/system/config/localconfig.php
+sed -i "" -e "s|%%%%timezone%%%%|$timezone|g" $tempDir/system/config/localconfig.php
 
 # copy the prepared config to the project
 cp -rf $tempDir/* .
