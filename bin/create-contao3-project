@@ -73,7 +73,7 @@ if [ -z "$name" ]; then
 fi
 
 # check for name signs
-if [[ $name = *[^[:alnum:]]* ]]; then
+if [[ $name = *[^[:alnum:],\-]* ]]; then
     echo "please enter a project name which is alphanumeric"
     exit 1
 fi
@@ -85,12 +85,11 @@ if [ -d "$name" ]; then
 fi
 
 # get other variables
-nameLength=${#name}
 hostname=$name.dev
-hostnameLength=${#hostname}
 url=https://github.com/contao/core/archive/$version.zip
 filename=contao-$version.zip
 foldername=core-$version
+safename=${name/[^[:alnum:]]/_}
 
 # check if the repository exists
 git ls-remote --exit-code $vagrantPhpRepository $vagrantPhpBranch > /dev/null
@@ -180,6 +179,7 @@ fi
 
 # replace variables within config
 sed -i "" -e "s/%%%%name%%%%/$name/g" $tempDir/system/config/localconfig.php
+sed -i "" -e "s/%%%%safename%%%%/$safename/g" $tempDir/system/config/localconfig.php
 sed -i "" -e "s|%%%%timezone%%%%|$timezone|g" $tempDir/system/config/localconfig.php
 
 # copy the prepared config to the project
@@ -191,11 +191,11 @@ cd vagrant-php
 vagrant up --provider=$vagrantProvider
 
 # create database
-vagrant ssh -c "echo 'CREATE DATABASE $name;' | mysql"
+vagrant ssh -c "echo 'CREATE DATABASE $safename;' | mysql"
 
 # install sql dump if exists
 if [ -f "../contao.sql" ]; then
-    vagrant ssh -c "cd /vagrant && mysql $name < contao.sql"
+    vagrant ssh -c "cd /vagrant && mysql $safename < contao.sql"
 fi
 
 # setup symfony
